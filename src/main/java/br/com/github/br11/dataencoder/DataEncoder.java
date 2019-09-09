@@ -30,9 +30,20 @@ import java.util.function.Supplier;
 import javax.crypto.Cipher;
 
 /**
+ * DataEncoder
  * 
- * @author marcio
- *
+ * <br/>
+ * // <br/>
+ * DataEncoder enc = new DataEncoder("truststore.pks", "mycertAlias"); <br/>
+ * enc.init(...); <br/>
+ * <br/>
+ * // Encrypting data with the recipient public key<br/>
+ * byte[] encData = enc.encrypt(data, recipientPublicKey); <br/>
+ * <br/>
+ * // decrypting data with my private key<br/>
+ * byte[] data = enc.decrypt(encData); <br/>
+ * <br/>
+ * <br/>
  */
 public class DataEncoder {
 
@@ -126,17 +137,9 @@ public class DataEncoder {
 	 * 
 	 */
 	private void loadMyKeys(Supplier<char[]> myKeysPasswordCallback) throws GeneralSecurityException, IOException {
-
 		Key key = trustStore.getKey(myCertAlias, myKeysPasswordCallback.get());
 		if (key instanceof PrivateKey) {
-			// Get certificate of public key
-			Certificate cert = trustStore.getCertificate(myCertAlias);
-
-			// Get public key
-			PublicKey publicKey = cert.getPublicKey();
-
-			// Return a key pair
-			myKeys = new KeyPair(publicKey, (PrivateKey) key);
+			myKeys = new KeyPair(trustStore.getCertificate(myCertAlias).getPublicKey(), (PrivateKey) key);
 		}
 	}
 
