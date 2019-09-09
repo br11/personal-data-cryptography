@@ -14,18 +14,18 @@
 	</properties>
 
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/net.corda/corda-core -->
+		<!--
 		<dependency>
 			<groupId>net.corda</groupId>
 			<artifactId>corda-core</artifactId>
 			<version>4.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/net.corda/corda-node -->
 		<dependency>
 		    <groupId>net.corda</groupId>
 		    <artifactId>corda-node</artifactId>
 		    <version>4.0</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
