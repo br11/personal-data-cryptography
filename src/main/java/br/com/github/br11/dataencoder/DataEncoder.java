@@ -4,99 +4,179 @@
 package br.com.github.br11.dataencoder;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathBuilderResult;
 import java.security.cert.CertPathParameters;
 import java.security.cert.CertPathValidator;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathValidatorResult;
 import java.security.cert.PKIXParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
+import java.util.function.Supplier;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 
 /**
+ * 
  * @author marcio
  *
  */
 public class DataEncoder {
-	
-	
-	public byte[] encrypt(byte[] data, PublicKey key) throws NoSuchAlgorithmException, NoSuchPaddingException,
-			InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException {
-		Cipher cipher = Cipher.getInstance(key.getAlgorithm()); // "RSA/ECB/PKCS1Padding"
-		cipher.init(Cipher.ENCRYPT_MODE, key);
-		return Base64.getEncoder().encode(cipher.doFinal(data));
+
+	public static final String KEYSTORE_TYPE = "JKS";
+	public static final String CERT_TYPE = "X.509";
+	public static final String ALGORITHM = "PKIX";
+
+	private String keyStorePath;
+	private String myCertAlias;
+
+	private KeyStore trustStore;
+	private KeyPair myKeys;
+
+	private CertPathValidator certPathValidator;
+	private PKIXParameters validationParameters;
+	private CertPathBuilder certPathBuilder;
+
+	/**
+	 * 
+	 * @param trustStorePath
+	 * @param myCertAlias
+	 */
+	public DataEncoder(String trustStorePath, String myCertAlias) {
+		this.keyStorePath = trustStorePath;
+		this.myCertAlias = myCertAlias;
 	}
 
-	public byte[] decrypt(byte[] data, PrivateKey key) throws NoSuchAlgorithmException, InvalidKeySpecException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		Cipher cipher = Cipher.getInstance(key.getAlgorithm()); // "RSA/ECB/PKCS1Padding"
-		cipher.init(Cipher.DECRYPT_MODE, key);
-		return cipher.doFinal(Base64.getDecoder().decode(data));
+	/**
+	 * 
+	 * @param trustStorePasswordCallback
+	 * @param myKeysPasswordCallback
+	 * @throws GeneralSecurityException
+	 * @throws IOException
+	 */
+	public void init(Supplier<char[]> trustStorePasswordCallback, Supplier<char[]> myKeysPasswordCallback)
+			throws GeneralSecurityException, IOException {
+		loadTrustStore(trustStorePasswordCallback);
+		loadMyKeys(myKeysPasswordCallback);
+		initValidator();
 	}
 
-	
-	 public static void main(String[] args) throws CertificateException {
-		 byte[] certBytes = new byte[10];
-		 
-		 final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-		 
-		 final X509Certificate certificateToCheck = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(certBytes));
+	/**
+	 * 
+	 * @param data
+	 * @param key
+	 * @return
+	 * @throws GeneralSecurityException
+	 */
+	public byte[] encrypt(byte[] data, PublicKey key) throws GeneralSecurityException {
+		Cipher encryptCipher = Cipher.getInstance(key.getAlgorithm()); // "RSA/ECB/PKCS1Padding"
+		encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+		return Base64.getEncoder().encode(encryptCipher.doFinal(data));
+	}
 
-		 certificateToCheck.getPublicKey();
-	 }
+	/**
+	 * 
+	 * @param data
+	 * @return
+	 * @throws GeneralSecurityException
+	 */
+	public byte[] decrypt(byte[] data) throws GeneralSecurityException {
+		Cipher decryptCipher = Cipher.getInstance(myKeys.getPrivate().getAlgorithm()); // "RSA/ECB/PKCS1Padding"
+		decryptCipher.init(Cipher.DECRYPT_MODE, myKeys.getPrivate());
+		return decryptCipher.doFinal(Base64.getDecoder().decode(data));
+	}
 
-	 PublicKey getPublicKey(byte[] certBytes) throws GeneralSecurityException, IOException {
-		 return validate(certBytes).getPublicKey();
-	 }
-	 
-	 Certificate validate(byte[] certBytes) throws GeneralSecurityException, IOException {
-		 final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+	/**
+	 * 
+	 * @param certBytes
+	 * @return
+	 * @throws GeneralSecurityException
+	 * @throws IOException
+	 */
+	public PublicKey getPublicKey(byte[] certBytes) throws GeneralSecurityException, IOException {
+		return validate(certBytes).getPublicKey();
+	}
 
-		 final X509Certificate certificateToCheck = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(certBytes));
+	/*
+	 * 
+	 */
+	private void loadTrustStore(Supplier<char[]> trustStorePasswordCallback)
+			throws GeneralSecurityException, IOException {
+		if (trustStore == null) {
+			trustStore = KeyStore.getInstance(KEYSTORE_TYPE);
+			InputStream keyStoreStream = new FileInputStream(keyStorePath);
+			trustStore.load(keyStoreStream, trustStorePasswordCallback.get());
+		}
+	}
 
-		 final KeyStore trustStore = KeyStore.getInstance("JKS");
-		 InputStream keyStoreStream = new ByteArrayInputStream(new byte[100]);
-		 
-		 trustStore.load(keyStoreStream, "your password".toCharArray());
+	/*
+	 * 
+	 */
+	private void initValidator() throws GeneralSecurityException, IOException {
+		certPathValidator = CertPathValidator.getInstance(ALGORITHM);
+		validationParameters = new PKIXParameters(trustStore);
+		validationParameters.setRevocationEnabled(true); // if you want to check CRL
+		final X509CertSelector keyUsageSelector = new X509CertSelector();
+		keyUsageSelector.setKeyUsage(new boolean[] { true, false, true }); // to check digitalSignature and
+																			// keyEncipherment bits
+		validationParameters.setTargetCertConstraints(keyUsageSelector);
 
-		 final CertPathBuilder certPathBuilder = CertPathBuilder.getInstance("PKIX");
-		 final X509CertSelector certSelector = new X509CertSelector();
-		 certSelector.setCertificate(certificateToCheck);
+		certPathBuilder = CertPathBuilder.getInstance(ALGORITHM);
+	}
 
-		 final CertPathParameters certPathParameters = new PKIXBuilderParameters(trustStore, certSelector);
-		 final CertPathBuilderResult certPathBuilderResult = certPathBuilder.build(certPathParameters);
-		 final CertPath certPath = certPathBuilderResult.getCertPath();
+	/*
+	 * 
+	 */
+	public Certificate validate(byte[] certBytes) throws GeneralSecurityException, IOException {
+		X509Certificate certificateToCheck = (X509Certificate) CertificateFactory.getInstance(CERT_TYPE)
+				.generateCertificate(new ByteArrayInputStream(certBytes));
 
-		 final CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX");
-		 final PKIXParameters validationParameters = new PKIXParameters(trustStore);
-		 validationParameters.setRevocationEnabled(true); // if you want to check CRL
-		 final X509CertSelector keyUsageSelector = new X509CertSelector();
-		 keyUsageSelector.setKeyUsage(new boolean[] { true, false, true }); // to check digitalSignature and keyEncipherment bits
-		 validationParameters.setTargetCertConstraints(keyUsageSelector);
-		 final PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) certPathValidator.validate(certPath, validationParameters);
+		X509CertSelector certSelector = new X509CertSelector();
+		certSelector.setCertificate(certificateToCheck);
 
-		 System.out.println(result);
-		 
-		 return certificateToCheck;
-	 }
+		CertPathParameters certPathParameters = new PKIXBuilderParameters(trustStore, certSelector);
+		CertPath certPath = certPathBuilder.build(certPathParameters).getCertPath();
+
+		PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) certPathValidator.validate(certPath,
+				validationParameters);
+
+		System.out.println(result);
+
+		return certificateToCheck;
+	}
+
+	/**
+	 * 
+	 * @param certBytes
+	 * @return
+	 * @throws GeneralSecurityException
+	 * @throws IOException
+	 */
+	private void loadMyKeys(Supplier<char[]> myKeysPasswordCallback) throws GeneralSecurityException, IOException {
+
+		Key key = trustStore.getKey(myCertAlias, myKeysPasswordCallback.get());
+		if (key instanceof PrivateKey) {
+			// Get certificate of public key
+			Certificate cert = trustStore.getCertificate(myCertAlias);
+
+			// Get public key
+			PublicKey publicKey = cert.getPublicKey();
+
+			// Return a key pair
+			myKeys = new KeyPair(publicKey, (PrivateKey) key);
+		}
+	}
 }
