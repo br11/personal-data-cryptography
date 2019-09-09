@@ -125,6 +125,24 @@ public class DataEncoder {
 	/*
 	 * 
 	 */
+	private void loadMyKeys(Supplier<char[]> myKeysPasswordCallback) throws GeneralSecurityException, IOException {
+
+		Key key = trustStore.getKey(myCertAlias, myKeysPasswordCallback.get());
+		if (key instanceof PrivateKey) {
+			// Get certificate of public key
+			Certificate cert = trustStore.getCertificate(myCertAlias);
+
+			// Get public key
+			PublicKey publicKey = cert.getPublicKey();
+
+			// Return a key pair
+			myKeys = new KeyPair(publicKey, (PrivateKey) key);
+		}
+	}
+
+	/*
+	 * 
+	 */
 	private void initValidator() throws GeneralSecurityException, IOException {
 		certPathValidator = CertPathValidator.getInstance(ALGORITHM);
 		validationParameters = new PKIXParameters(trustStore);
@@ -140,7 +158,7 @@ public class DataEncoder {
 	/*
 	 * 
 	 */
-	public Certificate validate(byte[] certBytes) throws GeneralSecurityException, IOException {
+	private Certificate validate(byte[] certBytes) throws GeneralSecurityException, IOException {
 		X509Certificate certificateToCheck = (X509Certificate) CertificateFactory.getInstance(CERT_TYPE)
 				.generateCertificate(new ByteArrayInputStream(certBytes));
 
@@ -158,25 +176,4 @@ public class DataEncoder {
 		return certificateToCheck;
 	}
 
-	/**
-	 * 
-	 * @param certBytes
-	 * @return
-	 * @throws GeneralSecurityException
-	 * @throws IOException
-	 */
-	private void loadMyKeys(Supplier<char[]> myKeysPasswordCallback) throws GeneralSecurityException, IOException {
-
-		Key key = trustStore.getKey(myCertAlias, myKeysPasswordCallback.get());
-		if (key instanceof PrivateKey) {
-			// Get certificate of public key
-			Certificate cert = trustStore.getCertificate(myCertAlias);
-
-			// Get public key
-			PublicKey publicKey = cert.getPublicKey();
-
-			// Return a key pair
-			myKeys = new KeyPair(publicKey, (PrivateKey) key);
-		}
-	}
 }
