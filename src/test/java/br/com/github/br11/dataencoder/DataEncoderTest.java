@@ -1,12 +1,15 @@
 package br.com.github.br11.dataencoder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyStoreException;
 import java.security.PublicKey;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.util.Calendar;
 import java.util.Date;
@@ -15,19 +18,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Generating a test certificate valid for one year<br/>
+ * # Generating certificates for testing<br/>
  * <br/>
  * openssl req -x509 -newkey rsa:4096 -keyout mykey.pem -out mycert.pem -days
  * 365 <br/>
+ * &nbsp;&nbsp;&nbsp;&nbsp; > key password: changeittoo<br/>
  * <br/>
- * keytool -import -alias my_test -storepass changeit -noprompt -keystore
- * cacerts -file cert.pem<br/>
- * &nbsp;&nbsp;&nbsp;&nbsp; > pass: changeittoo<br/>
+ * openssl pkcs12 -export -in mycert.pem -inkey mykey.pem -name my_test -out
+ * mycert-PKCS-12.p12 <br/>
+ * &nbsp;&nbsp;&nbsp;&nbsp; > key password: changeittoo<br/>
  * <br/>
+ * keytool -importkeystore -deststorepass changeit -destkeystore cacerts
+ * -srckeystore mycert-PKCS-12.p12 -srcstoretype PKCS12 <br/>
+ * &nbsp;&nbsp;&nbsp;&nbsp; > key password: changeittoo<br/>
  * <br/>
  * openssl req -x509 -newkey rsa:4096 -keyout otherkey.pem -out othercert.pem
  * -days 365<br/>
- * <br/>
+ * &nbsp;&nbsp;&nbsp;&nbsp; > key password: changeitaswell<br/>
  * <br/>
  */
 public class DataEncoderTest {
@@ -104,35 +111,31 @@ public class DataEncoderTest {
 	}
 
 	@Test
-	public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
-		String data = "some data";
+	public void testEncrypt() throws KeyStoreException, IOException, GeneralSecurityException, CertificateException {
+		dataEncoder.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
+		dataEncoder.setValidateCertPath(false);
+		
+		PublicKey publicKey = dataEncoder.getPublicKey(new FileInputStream("./src/test/resources/othercert.pem"));
 
+		String data = "some data";
+		byte[] encryptedData = dataEncoder.encrypt(data.getBytes(), publicKey);
+
+		assertNotEquals(data, new String(encryptedData));
+	}
+
+	@Test
+	public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
 		dataEncoder.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
 		dataEncoder.setValidateCertPath(false);
 
 		PublicKey publicKey = dataEncoder.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
 
+		String data = "some data";
 		byte[] encryptedData = dataEncoder.encrypt(data.getBytes(), publicKey);
-
 		byte[] decryptedData = dataEncoder.decrypt(encryptedData);
 
+		assertNotEquals(data, new String(encryptedData));
 		assertEquals(data, new String(decryptedData));
 	}
-
-	// @Test
-	// public void testDecrypt() throws KeyStoreException, IOException,
-	// GeneralSecurityException, CertificateException {
-	// KeyStore trustStore = KeyStore.getInstance(DataEncoder.KEYSTORE_TYPE);
-	// InputStream keyStoreStream = new
-	// FileInputStream("./src/test/resources/othercert.pem");
-	// trustStore.load(keyStoreStream, "changeitaswell".toCharArray());
-	//
-	// Enumeration<String> aliases = trustStore.aliases();
-	// while(aliases.hasMoreElements()) {
-	// System.out.println(aliases.nextElement());
-	// }
-	//
-	// fail("not yet implemented");
-	// }
 
 }
