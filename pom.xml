@@ -3,10 +3,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.br11</groupId>
-	<artifactId>data-encoder</artifactId>
+	<artifactId>personal-data-cryptography</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>data-encoder</name>
-	<description>data encoder</description>
+	<name>personal-data-cryptography</name>
+	<description>Personal Data Cryptography Component Library</description>
 
 	<properties>
 		<project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
@@ -14,18 +14,6 @@
 	</properties>
 
 	<dependencies>
-		<!--
-		<dependency>
-			<groupId>net.corda</groupId>
-			<artifactId>corda-core</artifactId>
-			<version>4.0</version>
-		</dependency>
-		<dependency>
-		    <groupId>net.corda</groupId>
-		    <artifactId>corda-node</artifactId>
-		    <version>4.0</version>
-		</dependency>
-		-->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
