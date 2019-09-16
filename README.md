@@ -24,7 +24,7 @@ openssl req -x509 -newkey rsa:4096 -keyout otherkey.pem \
 ## Unit testing
 ```Java
 private DataEncoder dataEncoder;
-PublicKey publicKey;
+private PublicKey publicKey;
 
 @Before
 public void setUp() {
