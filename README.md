@@ -1,27 +1,26 @@
 # Personal Data Cryptography
 
 ## Generating certificates for testing
+
+Generating and converting our self-signed certificate. Enter 'changeittoo' for password.
 ```console
 openssl req -x509 -newkey rsa:4096 \
         -keyout mykey.pem -out mycert.pem -days 365 
 ```
-  password: changeittoo
 ```console
 openssl pkcs12 -export -in mycert.pem -inkey mykey.pem \
         -name my_test -out mycert-PKCS-12.p12 
 ```
-  password: changeittoo
 ```console
 keytool -importkeystore -deststorepass changeit -destkeystore cacerts \
         -srckeystore mycert-PKCS-12.p12 -srcstoretype PKCS12 
 ```
-  password: changeittoo
+
+Generating a client self-signed certificate. Enter 'changeitaswell' for password.
 ```console
 openssl req -x509 -newkey rsa:4096 -keyout otherkey.pem \
         -out othercert.pem -days 365
 ```
-  password: changeitaswell
-
 ## Unit testing
 ```Java
 private DataEncoder dataEncoder;
