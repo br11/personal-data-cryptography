@@ -29,7 +29,7 @@ Generating a self-signed certificate for the data sender. Set password to 'chang
 openssl req -x509 -newkey rsa:4096 -keyout sender-key.pem \
         -out sender-cert.pem -days 365
 ```
-## Unit testing
+#### Unit testing
 ```Java
 // Sender
 private DataEncoder senderDataCipher;
