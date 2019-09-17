@@ -1,47 +1,65 @@
 # Personal Data Cryptography
 
-## Generating certificates for testing
+## Data Privacy Module
 
-Generating and converting our self-signed certificate. Enter 'changeittoo' for password.
+This module provides personal data privacy end-to-end.
+The sender encrypts the data with the receiver's public key and send it. The receiver than decrypts with its private key.
+Even if the means of exchange is public, the data privacy is guaranteed. 
+
+#### Generating certificates for testing
+
+Generating a self-signed certificate for the data receiver. Set password to 'changeittoo'.
 ```console
 openssl req -x509 -newkey rsa:4096 \
-        -keyout mykey.pem -out mycert.pem -days 365 
+        -keyout receiver-key.pem -out receiver-cert.pem -days 365 
 ```
+Converting the certificate into a PKCS-12 file.
 ```console
-openssl pkcs12 -export -in mycert.pem -inkey mykey.pem \
-        -name my_test -out mycert-PKCS-12.p12 
+openssl pkcs12 -export -in receiver-cert.pem -inkey receiver-key.pem \
+        -name receiver -out receiver-cert-PKCS-12.p12 
 ```
+Importing certificate and keys to the Java trusted store.
 ```console
 keytool -importkeystore -deststorepass changeit -destkeystore cacerts \
-        -srckeystore mycert-PKCS-12.p12 -srcstoretype PKCS12 
+        -srckeystore receiver-cert-PKCS-12.p12 -srcstoretype PKCS12 
 ```
 
-Generating a client self-signed certificate. Enter 'changeitaswell' for password.
+Generating a self-signed certificate for the data sender. Set password to 'changeitaswell'.
 ```console
-openssl req -x509 -newkey rsa:4096 -keyout otherkey.pem \
-        -out othercert.pem -days 365
+openssl req -x509 -newkey rsa:4096 -keyout sender-key.pem \
+        -out sender-cert.pem -days 365
 ```
 ## Unit testing
 ```Java
-private DataEncoder dataEncoder;
-private PublicKey publicKey;
+// Sender
+private DataEncoder senderDataCipher;
+private PublicKey receiverPublicKey;
+
+// Receiver
+private DataEncoder receiverDataCipher;
 
 @Before
 public void setUp() {
-    dataEncoder = new DataEncoder("./src/test/resources/cacerts", "my_test");
-    dataEncoder.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
-    dataEncoder.setValidateCertPath(false);
-    PublicKey publicKey = dataEncoder.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
+    // In the sender    
+    senderDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
+    senderDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
+    senderDataCipher.setValidateCertPath(false);
+    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
+
+    // In the receiver
+    receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
+    receiverDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
+    receiverDataCipher.setValidateCertPath(false);
 }
 
 @Test
 public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
-    // Sender side
+    // In the sender
     String data = "some data";
-    PublicKey publicKey = dataEncoder.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
-    byte[] encryptedData = dataEncoder.encrypt(data.getBytes(), publicKey);
+    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
+    byte[] encryptedData = dataEncoder.encrypt(data.getBytes(), receiverPublicKey);
 
-    // Recipient side
+    // In the receiver
     byte[] decryptedData = dataEncoder.decrypt(encryptedData);
 
     // Assertions
@@ -49,3 +67,5 @@ public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
     assertEquals(data, new String(decryptedData));
 }
 ```
+
+## Digital Signature Module
