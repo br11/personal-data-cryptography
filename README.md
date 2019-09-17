@@ -57,10 +57,10 @@ public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
     // In the sender
     String data = "some data";
     PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
-    byte[] encryptedData = dataEncoder.encrypt(data.getBytes(), receiverPublicKey);
+    byte[] encryptedData = senderDataCipher.encrypt(data.getBytes(), receiverPublicKey);
 
     // In the receiver
-    byte[] decryptedData = dataEncoder.decrypt(encryptedData);
+    byte[] decryptedData = receiverDataCipher.decrypt(encryptedData);
 
     // Assertions
     assertNotEquals(data, new String(encryptedData));
@@ -69,3 +69,4 @@ public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
 ```
 
 ## Digital Signature Module
+[coming soon]
