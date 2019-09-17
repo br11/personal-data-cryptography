@@ -2,7 +2,7 @@
 
 ## Data Privacy Module
 
-This module provides personal data privacy end-to-end.
+This module provides personal data privacy end-to-end even in public networks.
 The sender encrypts the data with the receiver's public key and send it. The receiver than decrypts with its private key.
 Even if the means of exchange is public, the data privacy is guaranteed. 
 
