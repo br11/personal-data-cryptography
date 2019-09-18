@@ -44,7 +44,7 @@ public void setUp() {
     senderDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
     senderDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
     senderDataCipher.setValidateCertPath(false);
-    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
+    receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
 
     // In the receiver
     receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
