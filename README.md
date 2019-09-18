@@ -33,7 +33,6 @@ openssl req -x509 -newkey rsa:4096 -keyout sender-key.pem \
 ```Java
 // Sender
 private DataEncoder senderDataCipher;
-private PublicKey receiverPublicKey;
 
 // Receiver
 private DataEncoder receiverDataCipher;
@@ -44,7 +43,6 @@ public void setUp() {
     senderDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
     senderDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
     senderDataCipher.setValidateCertPath(false);
-    receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
 
     // In the receiver
     receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
@@ -56,7 +54,7 @@ public void setUp() {
 public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
     // In the sender
     String data = "some data";
-    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/mycert.pem"));
+    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/receiver.pem"));
     byte[] encryptedData = senderDataCipher.encrypt(data.getBytes(), receiverPublicKey);
 
     // In the receiver
