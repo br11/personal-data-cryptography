@@ -40,12 +40,12 @@ private DataEncoder receiverDataCipher;
 @Before
 public void setUp() {
     // In the sender    
-    senderDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
-    senderDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
+    senderDataCipher = new DataEncoder("./src/test/resources/cacerts");
+    senderDataCipher.init(() -> "changeit".toCharArray());
     senderDataCipher.setValidateCertPath(false);
 
     // In the receiver
-    receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "my_test");
+    receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "receiver");
     receiverDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
     receiverDataCipher.setValidateCertPath(false);
 }
