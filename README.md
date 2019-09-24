@@ -3,62 +3,62 @@
 ## Data Privacy Module
 
 This module provides personal data privacy end-to-end even in public networks.
-The sender encrypts the data with the receiver's public key and send it. The receiver than decrypts with its private key.
+Party 2 encrypts the data with the party1's public key and send it. The party1 than decrypts with its private key.
 Even if the means of exchange is public, the data privacy is guaranteed. 
 
 #### Generating certificates for testing
 
-Generating a self-signed certificate for the data receiver. Set password to 'changeittoo'.
+Generating a self-signed certificate for party 1 (data receiver). Set password to 'changeittoo'.
 ```console
 openssl req -x509 -newkey rsa:4096 \
-        -keyout receiver-key.pem -out receiver-cert.pem -days 365 
+        -keyout party1-key.pem -out party1-cert.pem -days 365 
 ```
 Converting the certificate into a PKCS-12 file.
 ```console
-openssl pkcs12 -export -in receiver-cert.pem -inkey receiver-key.pem \
-        -name receiver -out receiver-cert-PKCS-12.p12 
+openssl pkcs12 -export -in party1-cert.pem -inkey party1-key.pem \
+        -name party1 -out party1-cert-PKCS-12.p12 
 ```
 Importing certificate and keys to the Java trusted store.
 ```console
 keytool -importkeystore -deststorepass changeit -destkeystore cacerts \
-        -srckeystore receiver-cert-PKCS-12.p12 -srcstoretype PKCS12 
+        -srckeystore party1-cert-PKCS-12.p12 -srcstoretype PKCS12 
 ```
 
-Generating a self-signed certificate for the data sender. Set password to 'changeitaswell'.
+Generating a self-signed certificate for party 2 (data sender). Set password to 'changeitaswell'.
 ```console
-openssl req -x509 -newkey rsa:4096 -keyout sender-key.pem \
-        -out sender-cert.pem -days 365
+openssl req -x509 -newkey rsa:4096 -keyout party2-key.pem \
+        -out party2-cert.pem -days 365
 ```
 #### Unit testing
 ```Java
-// Sender
-private DataEncoder senderDataCipher;
+// party2
+private DataEncoder party2DataCipher;
 
-// Receiver
-private DataEncoder receiverDataCipher;
+// party1
+private DataEncoder party1DataCipher;
 
 @Before
 public void setUp() {
-    // In the sender    
-    senderDataCipher = new DataEncoder("./src/test/resources/cacerts");
-    senderDataCipher.init(() -> "changeit".toCharArray());
-    senderDataCipher.setValidateCertPath(false);
+    // In the party2    
+    party2DataCipher = new DataEncoder("./src/test/resources/cacerts");
+    party2DataCipher.init(() -> "changeit".toCharArray());
+    party2DataCipher.setValidateCertPath(false);
 
-    // In the receiver
-    receiverDataCipher = new DataEncoder("./src/test/resources/cacerts", "receiver");
-    receiverDataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
-    receiverDataCipher.setValidateCertPath(false);
+    // In the party1
+    party1DataCipher = new DataEncoder("./src/test/resources/cacerts", "party1");
+    party1DataCipher.init(() -> "changeit".toCharArray(), () -> "changeittoo".toCharArray());
+    party1DataCipher.setValidateCertPath(false);
 }
 
 @Test
 public void testEncryptDecrypt() throws GeneralSecurityException, IOException {
-    // In the sender
+    // In the party2
     String data = "some data";
-    PublicKey receiverPublicKey = senderDataCipher.getPublicKey(new FileInputStream("./src/test/resources/receiver.pem"));
-    byte[] encryptedData = senderDataCipher.encrypt(data.getBytes(), receiverPublicKey);
+    PublicKey party1PublicKey = party2DataCipher.getPublicKey(new FileInputStream("./src/test/resources/party1.pem"));
+    byte[] encryptedData = party2DataCipher.encrypt(data.getBytes(), party1PublicKey);
 
-    // In the receiver
-    byte[] decryptedData = receiverDataCipher.decrypt(encryptedData);
+    // In the party1
+    byte[] decryptedData = party1DataCipher.decrypt(encryptedData);
 
     // Assertions
     assertNotEquals(data, new String(encryptedData));
