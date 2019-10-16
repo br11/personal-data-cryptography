@@ -37,9 +37,9 @@ import org.junit.Test;
  * &nbsp;&nbsp;&nbsp;&nbsp; > key password: changeitaswell<br/>
  * <br/>
  */
-public class DataEncoderTest {
+public class DataCipherTest {
 
-	private DataEncoder dataEncoder;
+	private DataCipher dataEncoder;
 
 	private static final Date TODAY = Calendar.getInstance().getTime();
 
@@ -53,7 +53,7 @@ public class DataEncoderTest {
 
 	@Before
 	public void setUp() {
-		dataEncoder = new DataEncoder("./src/test/resources/cacerts", "my_test");
+		dataEncoder = new DataCipher("./src/test/resources/cacerts", "my_test");
 	}
 
 	@Test

@@ -35,7 +35,7 @@ import javax.crypto.Cipher;
  * 
  * <br/>
  * // <br/>
- * DataEncoder enc = new DataEncoder("truststore.pks", "mycertAlias"); <br/>
+ * DataCipher enc = new DataCipher("truststore.pks", "mycertAlias"); <br/>
  * enc.init(...); <br/>
  * <br/>
  * // Encrypting data with the recipient public key<br/>
@@ -46,7 +46,7 @@ import javax.crypto.Cipher;
  * <br/>
  * <br/>
  */
-public class DataEncoder {
+public class DataCipher {
 
 	public static final String KEYSTORE_TYPE = "JKS";
 	public static final String CERT_TYPE = "X.509";
@@ -70,9 +70,17 @@ public class DataEncoder {
 	 * @param trustStorePath
 	 * @param myCertAlias
 	 */
-	public DataEncoder(String trustStorePath, String myCertAlias) {
+	public DataCipher(String trustStorePath, String myCertAlias) {
 		this.trustStorePath = trustStorePath;
 		this.myCertAlias = myCertAlias;
+	}
+
+	/**
+	 * 
+	 * @param trustStorePath
+	 */
+	public DataCipher(String trustStorePath) {
+		this(trustStorePath, null);
 	}
 
 	/**
@@ -83,9 +91,19 @@ public class DataEncoder {
 		return validateCertPath;
 	}
 
-	public DataEncoder setValidateCertPath(boolean validateCertPath) {
+	public DataCipher setValidateCertPath(boolean validateCertPath) {
 		this.validateCertPath = validateCertPath;
 		return this;
+	}
+
+	/**
+	 * 
+	 * @param trustStorePasswordCallback
+	 * @throws GeneralSecurityException
+	 * @throws IOException
+	 */
+	public void init(Supplier<char[]> trustStorePasswordCallback) throws GeneralSecurityException, IOException {
+		init(trustStorePasswordCallback, null);
 	}
 
 	/**
@@ -98,7 +116,9 @@ public class DataEncoder {
 	public void init(Supplier<char[]> trustStorePasswordCallback, Supplier<char[]> myKeysPasswordCallback)
 			throws GeneralSecurityException, IOException {
 		loadTrustStore(trustStorePasswordCallback);
-		loadMyKeys(myKeysPasswordCallback);
+		if (myKeysPasswordCallback != null) {
+			loadMyKeys(myKeysPasswordCallback);
+		}
 		initValidator();
 	}
 
